@@ -164,146 +164,160 @@ python tools/generate_scenes.py
 
 ***
 
-# 📘 README (English)
+# CSV 记录字段说明
 
-# Dual-Arm Grasp Pair Evaluation System (Scheme B)
+该程序每次运行会在 `results/<时间戳>/` 下输出 **两类 CSV**：
 
-This project provides a complete evaluation pipeline for **dual UR5 robot arms** performing **ground grasping (Scheme B)** using **MuJoCo + Mink**.  
-It samples grasp-pair candidates, runs multi-stage simulations, and outputs success rate, slip metrics, contact statistics, and relative pose errors.
+1.  **候选抓取汇总 CSV**：`<scene_name>.csv`
+    *   **每一行**对应一个 grasp candidate（一个候选双手抓取点对）的评估结果（包含抓取点信息 + 最终指标）。
 
-***
-
-## 📂 Project Structure
-
-The project is organized as follows:
-
-    ├── assets/dual_arm_and_single_arm      # Robot models, meshes, scenes
-    ├── data                                 # Auto-generated trajectory data
-    ├── EnvironmentAndObjects                # Robot and object classes
-    ├── utils                                # Utilities (visualization, conversions)
-    ├── tools                                # Scene generation scripts
-    ├── results                              # Evaluation outputs
-    ├── batch_grasp_pair_eval_schemeB.py     # ★ Main program
-    └── trans_single_arm_2_dual.py           # Single → dual arm demo
-
-### assets/
-
-Contains:
-
-*   Dual UR5 model XML files
-*   All meshes (UR5, Robotiq gripper, base stand, Panda model, etc.)
-*   Scene XMLs
-*   Object XML files
-
-### EnvironmentAndObjects/
-
-Core components:
-
-*   `robot_arm.py` — UR5 control helper for Mink & MuJoCo
-*   `scene_object.py` — Object class
-
-### utils/
-
-Reusable tools:
-
-*   trajectory visualization
-*   trajectory scaling
-*   common utilities
-
-### tools/
-
-Scene generation & path patching tools.
+2.  **阶段指标 CSV**：`<scene_name>_stage_metrics.csv`
+    *   **每个 candidate 固定写 5 行**（Stage1\~Stage5），记录每个阶段开始/结束后的状态与指标。
+    *   若某阶段失败，会把后续阶段补齐并标记为 `skipped_due_to_failure(...)`。
 
 ***
 
-## 🚀 Main Program: batch\_grasp\_pair\_eval\_schemeB.py
+## 1) `<scene_name>.csv`（candidate-level）字段含义
 
-This script implements full **dual-arm ground grasp evaluation (Scheme B)**.
+### A. 基本标识
 
-### Main features:
-
-### 1. Automatic scene loading
-
-From `assets/.../scenes/scene_*.xml`.
-
-### 2. Automatic object discovery
-
-Finds the **single freejoint object** in the scene.
-
-### 3. Adaptive grasp-pair sampling
-
-Based on the object AABB:
-
-*   sample two grasp points
-*   compute approach direction
-*   convert to world / center / object coordinates
-
-### 4. Five-stage evaluation
-
-| Stage | Meaning                             |
-| ----- | ----------------------------------- |
-| 1     | Pregrasp pose                       |
-| 2     | Grasp pose alignment                |
-| 3     | Close gripper and establish contact |
-| 4     | Lift the object                     |
-| 5     | Hold and measure slip/stability     |
-
-### 5. Per-candidate metrics:
-
-*   success / failure reasons
-*   lift height
-*   slip amount
-*   RMS linear & angular velocity
-*   closed-chain relative pose error
-*   contact ratio
-*   minimum finger–object distance
-*   contact force stats
-
-Results are written into:
-
-    results/20260126_xxxxxx/
-        ├── scene_xxx.csv
-        ├── scene_xxx_stage_metrics.csv
-        ├── top5_scene_xxx.json
-        └── summary_all.json
+*   **scene**：场景名称（通常来自 `scene_*.xml` 的文件名去掉后缀）
+*   **object\_body**：场景里被抓取的物体 body 名称（freejoint 对应的 body）
+*   **candidate\_id**：候选抓取对的编号（从 0 开始）
+*   **pair\_dist**：左右抓取点在**世界坐标系**下的距离（米，m）
 
 ***
 
-## ▶️ Run the Evaluation
+### B. 抓取点位置（世界坐标系 world frame）
 
-```bash
-python batch_grasp_pair_eval_schemeB.py
-```
+以下字段描述 candidate 的左右抓取点在世界系中的坐标（单位：m）：
 
-### Keyboard Controls (MuJoCo Viewer)
-
-| Key   | Description          |
-| ----- | -------------------- |
-| q     | Quit                 |
-| space | Pause / resume       |
-| .     | Step forward         |
-| n     | Skip candidate       |
-| v     | Toggle grasp markers |
+*   **left\_x\_w, left\_y\_w, left\_z\_w**：左抓取点世界坐标
+*   **right\_x\_w, right\_y\_w, right\_z\_w**：右抓取点世界坐标
 
 ***
 
-## ▶️ Single-arm / Dual-arm Execution Demo
+### C. 抓取点位置（相对 AABB 几何中心）
 
-To visualize single-arm or dual-arm trajectory playback:
+这是“抓取点相对物体 AABB 几何中心”的偏移量（世界系下计算，单位：m）：
 
-```bash
-python trans_single_arm_2_dual.py
-```
+*   **left\_x\_center, left\_y\_center, left\_z\_center**
+*   **right\_x\_center, right\_y\_center, right\_z\_center**
 
-Functions:
-
-*   `execute_trajectory_general` → single-arm
-*   `execute_object_centric_trajectory` → dual-arm coordinated motion
+> 含义：`*_center = *_w - center_w`，其中 `center_w` 是物体 AABB 的中心点（世界坐标）。
 
 ***
 
-## 🔨 Generate Scene Files Automatically
+### D. 抓取点位置（物体坐标系 object/body frame）
 
-```bash
-python tools/generate_scenes.py
-```
+将抓取点从世界系变换到**物体局部坐标系**（单位：m）：
+
+*   **left\_x\_obj, left\_y\_obj, left\_z\_obj**
+*   **right\_x\_obj, right\_y\_obj, right\_z\_obj**
+
+> 含义：如果物体发生移动/旋转，物体系下的抓取点更“稳定”，便于复现与分析。
+
+***
+
+### E. 抓取“接近方向”（approach direction，世界系）
+
+代码用抓取姿态的旋转矩阵 `rot_w` 的 **Z 轴**作为接近方向（单位无，方向向量）：
+
+*   **left\_ax\_w, left\_ay\_w, left\_az\_w**：左抓取姿态 Z 轴在世界系的分量
+*   **right\_ax\_w, right\_ay\_w, right\_az\_w**：右抓取姿态 Z 轴在世界系的分量
+
+> 你可以理解为：夹爪“朝向/插入方向”的单位向量。
+
+***
+
+### F. 最终评估结果与指标（metrics）
+
+这些字段来自 `evaluate_candidate()` 的最终返回 `metrics`：
+
+*   **success**：是否成功（1=成功，0=失败）
+    > 当前实现中 success 近似由“抬升高度达到阈值且保持阶段有持续时间”等条件综合决定。
+
+*   **has\_contact**：是否在关爪后建立了指尖-物体接触（1/0）
+
+*   **lift\_height**：抬升高度（m），通常是物体 z 方向相对初始高度的增量
+
+*   **hold\_duration**：保持阶段持续时间（s）
+
+*   **max\_slip**：保持阶段内最大滑移量（m）
+    > 计算方式：物体坐标系到夹爪的相对位姿在时间上的平移变化（左右手取最大值）。
+
+*   **obj\_v\_rms**：物体线速度 RMS（m/s）
+
+*   **obj\_w\_rms**：物体角速度 RMS（rad/s）
+    > 来自 MuJoCo 的 `data.cvel`，在保持阶段统计均方根。
+
+*   **contact\_ratio**：保持阶段中“有指尖-物体接触”的帧比例（0\~1）
+
+*   **min\_contact\_dist**：接触距离最小值（m）
+    > 来自 MuJoCo contact 的 `c.dist`，数值越小表示越接触/嵌入越多（接触时可能接近 0 或为负）。
+
+*   **rel\_pos\_err**：左右末端执行器之间的**相对位置误差**（m）
+
+*   **rel\_rot\_err\_deg**：左右末端执行器之间的**相对旋转误差**（deg）
+    > 用闭链约束：以“夹住物体瞬间”的左右手相对位姿作为目标，后续 lift/hold 计算偏差。
+
+*   **contact\_force\_n\_mean**：接触力范数的平均值（N）
+
+*   **contact\_force\_n\_count**：统计接触力时的样本计数（用于平均的有效次数/帧数）
+    > 代码中用 `mj_contactForce` 得到接触力（取前三维力的范数），然后在阶段内做平均。
+
+*   **fail\_stage**：失败发生在哪个阶段（如 `"Stage3_close"` / `"Stage4_lift"` / `"exception"` 等）
+
+*   **fail\_reason**：失败原因字符串（如 `no_contact`, `dropped`, `ik_fail:...`, `viewer_closed` 等）
+
+***
+
+## 2) `<scene_name>_stage_metrics.csv`（stage-level）字段含义
+
+该 CSV **每个 candidate 固定 5 行**，对应：
+
+1.  `Stage1_pregrasp`：到预抓取位姿
+2.  `Stage2_grasp`：到抓取位姿
+3.  `Stage3_close`：关爪并检测接触
+4.  `Stage4_lift`：抬升
+5.  `Stage5_hold`：保持并统计稳定性
+
+### A. 基本标识与阶段信息
+
+*   **scene**：场景名称
+*   **object\_body**：物体 body 名
+*   **candidate\_id**：candidate 编号
+*   **stage\_idx**：阶段序号（1\~5）
+*   **stage**：阶段名称（如 `Stage3_close`）
+*   **stage\_ok**：该阶段是否成功（1=成功，0=失败/跳过）
+*   **fail\_reason**：失败/跳过原因
+    *   若是被补齐的后续阶段，会形如：`skipped_due_to_failure(StageX:reason)`
+
+***
+
+### B. 时刻与物体位置（阶段记录时刻的快照）
+
+*   **sim\_time**：写入该行时的仿真时间（s）
+*   **obj\_x, obj\_y, obj\_z**：写入该行时物体位置（世界坐标，m）
+
+***
+
+### C. 阶段内/阶段后统计指标（字段和 candidate-level 基本一致）
+
+以下字段在不同阶段可能是 NaN 或仅部分填写（你代码里通过默认值 `np.nan` 填充未适用项）：
+
+*   **lift\_height**（m）
+*   **hold\_duration**（s）
+*   **max\_slip**（m）
+*   **obj\_v\_rms**（m/s）
+*   **obj\_w\_rms**（rad/s）
+*   **contact\_ratio**（0\~1）
+*   **min\_contact\_dist**（m）
+*   **rel\_pos\_err**（m）
+*   **rel\_rot\_err\_deg**（deg）
+*   **contact\_force\_n\_mean**（N）
+*   **contact\_force\_n\_count**（count）
+
+> 例：Stage3 会记录 `min_contact_dist` 与接触力统计；Stage4 会记录 `lift_height` 和相对误差快照；Stage5 会记录几乎所有稳定性指标。
+
+***
