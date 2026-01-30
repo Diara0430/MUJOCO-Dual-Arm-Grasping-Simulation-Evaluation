@@ -1,0 +1,49 @@
+<mujocoimport>
+  <asset>
+    <texture name="grid" builtin="checker" height="500" rgb1=".1 .2 .3" rgb2=".2 .3 .4" type="2d" width="500"/>
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+    <texture name="skybox" type="skybox" builtin="gradient" rgb1=".1 .2 .3" rgb2="0 0 0" width="800" height="800"
+             mark="random" markrgb="1 1 1"/>
+    <material name="silver" specular="1" shininess="0.5" reflectance="1" emission="0.25" rgba="0.82 0.82 0.82 1"/>
+    <material name="grey" specular="1" shininess="0.5" reflectance="1" emission="0.1" rgba="0.5 0.5 0.5 1"/>
+    <material name="blue" specular="1" shininess="0.5" reflectance="1" emission="0" rgba="0.678 0.847 0.902 1"/>
+    <material name="black" specular="1" shininess="0.5" reflectance="1" emission="0" rgba="0.2 0.2 0.2 1"/>
+    <material name="wood" rgba="0.8 0.6 0.4 1"/>
+
+    <!-- Panda materials (required by mjx_panda.xml) -->
+    <material class="panda" name="white" rgba="1 1 1 1"/>
+    <material class="panda" name="off_white" rgba="0.901961 0.921569 0.929412 1"/>
+    <material class="panda" name="green" rgba="0 1 0 1"/>
+    <material class="panda" name="light_blue" rgba="0.039216 0.541176 0.780392 1"/>
+
+  </asset>
+
+  <visual>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <quality shadowsize="2048"/>
+    <map stiffness="700" shadowscale="0.5" fogstart="10" fogend="15" zfar="40" haze="0.3"/>
+  </visual>
+
+  <worldbody>
+    <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1"
+           castshadow="false"/>
+    <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1"
+           castshadow="false"/>
+
+    <geom name="ground" type="plane" size="5 5 1" pos="0 0 0" quat="1 0 0 0" material="grid" condim="1"/>
+
+    <camera pos="2 0 1" xyaxes="0 1 0 -0.65 0 1"/>
+
+    <body name="table" pos="2.5 0 0">
+      <geom name="table_leg" type="cylinder" size="0.05 0.15" pos="0 0 0.15" material="grey"/>
+      <geom name="table_top" type="box" size="0.2 0.2 0.02" pos="0 0 0.32" material="wood"
+            condim="3" friction="1 0.005 0.0001"/>
+    </body>
+
+    <body name="big_table" pos="0.9 0 0">
+      <geom name="big_table_leg" type="cylinder" size="0.05 0.15" pos="0 0 0.15" material="grey"/>
+      <geom name="big_table_top" type="box" size="0.2 0.2 0.02" pos="0 0 0.32" material="wood"
+            condim="3" friction="1 0.005 0.0001"/>
+    </body>
+  </worldbody>
+</mujocoimport>

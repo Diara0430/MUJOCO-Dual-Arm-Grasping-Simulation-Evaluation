@@ -1,0 +1,25 @@
+✅ 使用方法
+假设你的目录是：
+./assets/dual_arm_and_single_arm/objects/object_sim/
+  alarmclock/object.xml
+  mug/object.xml
+  ...
+
+1）先 dry-run（只看哪些会改）
+"python patch_object_sim_objectxml.py \
+  ./assets/dual_arm_and_single_arm/objects/object_sim \
+  --dry-run"
+你会看到类似：
+[PATCH] .../alarmclock/object.xml | pos_changed=True freejoint_inserted=True
+
+2）确认无误后，真正写回（会自动生成 .bak 备份）
+"python patch_object_sim_objectxml.py \
+  ./assets/dual_arm_and_single_arm/objects/object_sim"
+
+3）如果某些 object.xml 里 <body name="object"> 没有 pos，你想补 pos
+"python patch_object_sim_objectxml.py \
+  ./assets/dual_arm_and_single_arm/objects/object_sim \
+  --add-pos-if-missing"
+✅ 快速验证是否改成功（命令行）
+"grep -R --line-number 'pos="[^"]* 0.6 [^"]*"' ./assets/dual_arm_and_single_arm/objects/object_sim/*/object.xml
+    grep -R --line-number '<freejoint name="object_free"' ./assets/dual_arm_and_single_arm/objects/object_sim/*/object.xml"

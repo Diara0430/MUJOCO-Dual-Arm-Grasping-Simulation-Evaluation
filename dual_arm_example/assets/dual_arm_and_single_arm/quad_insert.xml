@@ -1,0 +1,15 @@
+<mujoco>
+    <statistic center="2 0 0.5" extent="2.0"/>
+
+    <visual>
+        <global offwidth="1920" offheight="1080"/>
+    </visual>
+    <compiler angle="radian" meshdir="meshes"/>
+    <option integrator="implicit" timestep="0.002" solver="Newton" impratio="10" tolerance="1e-10"/>
+    <option gravity="0 0 -9.81"/>
+
+    <size njmax="3000" nconmax="1000"/>
+    <include file="mjx_panda.xml"/>
+    <include file="world.xml"/>
+    <include file="dual_ur5.xml"/>
+</mujoco>

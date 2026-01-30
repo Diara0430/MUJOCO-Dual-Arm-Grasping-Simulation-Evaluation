@@ -1,0 +1,44 @@
+<mujoco>
+  <!-- =========================
+       Base scene for Scheme-B
+       - stable include paths
+       - meshdir fixed
+       - panda materials provided
+     ========================= -->
+
+  <statistic center="2 0 0.5" extent="2.0"/>
+
+  <visual>
+    <global offwidth="1920" offheight="1080"/>
+  </visual>
+
+  <!-- IMPORTANT:
+       This file lives in assets/dual_arm_and_single_arm/
+       so meshdir="meshes" points to assets/dual_arm_and_single_arm/meshes
+  -->
+  <compiler angle="radian" meshdir="meshes"/>
+
+  <option integrator="implicit" timestep="0.002" solver="Newton" impratio="10" tolerance="1e-10"/>
+  <option gravity="0 0 -9.81"/>
+  <size njmax="3000" nconmax="1000"/>
+
+  <!-- 1) Provide panda materials (required by mjx_panda.xml) -->
+  <asset>
+    <material class="panda" name="white" rgba="1 1 1 1"/>
+    <material class="panda" name="off_white" rgba="0.901961 0.921569 0.929412 1"/>
+    <material class="panda" name="green" rgba="0 1 0 1"/>
+    <material class="panda" name="light_blue" rgba="0.039216 0.541176 0.780392 1"/>
+  </asset>
+
+  <!-- 2) Includes (MUST be same-directory relative paths) -->
+  <include file="mjx_panda.xml"/>
+  <include file="world_base.xml"/>
+
+  <!-- Choose ONE of the following:
+       (A) If you generated dual_ur5_scene.xml (mesh paths patched), use it.
+       (B) Otherwise use dual_ur5.xml (requires meshdir to work, which we set above).
+  -->
+  <!-- <include file="dual_ur5_scene.xml"/> -->
+  <include file="dual_ur5.xml"/>
+
+</mujoco>

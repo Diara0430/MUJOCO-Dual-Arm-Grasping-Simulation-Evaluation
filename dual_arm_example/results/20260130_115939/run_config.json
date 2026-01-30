@@ -1,0 +1,23 @@
+{
+  "scheme": "B (ground pick)",
+  "NUM_CANDIDATES": 100,
+  "PREGRASP_OFFSET": 0.1,
+  "LIFT_HEIGHT": 0.3,
+  "HOLD_TIME": 2.0,
+  "CONTROL_FREQ": 60.0,
+  "SOLVER": "daqp",
+  "MAX_VEL": 3.141592653589793,
+  "keys": {
+    "q": "quit",
+    "space": "pause",
+    ".": "step",
+    "n": "skip",
+    "v": "markers"
+  },
+  "mujoco_version": "3.4.0",
+  "ALLOW_HEADLESS_AFTER_VIEWER_CLOSE": true,
+  "CONTINUE_ON_CANDIDATE_EXCEPTION": true,
+  "VERBOSE_STAGE": true,
+  "stage_metrics_fixed_5_rows": true,
+  "ENABLE_CONTACT_FORCE_STATS": true
+}

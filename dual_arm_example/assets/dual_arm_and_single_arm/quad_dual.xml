@@ -1,0 +1,23 @@
+<mujoco>
+  <!-- 可视化尺度（用于默认相机/渲染范围的基准） -->
+  <statistic center="2 0 0.5" extent="2.0"/>
+
+  <!-- 离屏渲染分辨率 -->
+  <visual>
+    <global offwidth="1920" offheight="1080"/>
+  </visual>
+
+  <!-- 编译期：角度单位与资源目录 -->
+  <compiler angle="radian" meshdir="meshes"/>
+
+  <!-- 物理选项：步长、积分器、求解器、摩擦阻抗比、容差、重力 -->
+  <option integrator="implicit" timestep="0.002" solver="Newton" impratio="10" tolerance="1e-10"/>
+  <option gravity="0 0 -9.81"/>
+
+  <!-- 预分配上限（约束维/接触对） -->
+  <size njmax="3000" nconmax="1000"/>
+
+  <!-- 仅合并 UR5 双臂 -->
+  <include file="world_pure.xml"/>
+  <include file="dual_ur5.xml"/>
+</mujoco>

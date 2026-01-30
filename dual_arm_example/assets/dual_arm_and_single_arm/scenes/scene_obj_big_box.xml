@@ -1,0 +1,5 @@
+<mujoco>
+  <compiler angle="radian" meshdir="../meshes"/>
+  <include file="../quad_dual.xml"/>
+  <include file="../objects/obj_big_box.xml"/>
+</mujoco>

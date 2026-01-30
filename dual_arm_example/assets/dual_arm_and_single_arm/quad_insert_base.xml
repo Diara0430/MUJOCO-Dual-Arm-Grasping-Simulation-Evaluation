@@ -1,0 +1,19 @@
+<mujoco>
+  <statistic center="2 0 0.5" extent="2.0"/>
+  <visual>
+    <global offwidth="1920" offheight="1080"/>
+  </visual>
+
+  <!-- compiler 写不写 meshdir 都无所谓了，因为 dual_ur5_scene.xml 已经写死 meshes/ 前缀 -->
+  <compiler angle="radian"/>
+
+  <option integrator="implicit" timestep="0.002" solver="Newton" impratio="10" tolerance="1e-10"/>
+  <option gravity="0 0 -9.81"/>
+  <size njmax="3000" nconmax="1000"/>
+
+  <include file="mjx_panda.xml"/>
+  <include file="world_base.xml"/>
+
+  <!-- ✅ 关键：用修补后的 scene 专用文件 -->
+  <include file="dual_ur5_scene.xml"/>
+</mujoco>

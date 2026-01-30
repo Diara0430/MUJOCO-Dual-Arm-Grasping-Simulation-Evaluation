@@ -1,0 +1,10 @@
+<mujoco>
+  <worldbody>
+    <body name="big_box" pos="0 0.6 0.121">
+      <freejoint name="big_box_joint"/>
+      <geom name="big_box_geom" type="box" size="0.08 0.16 0.02"
+            rgba="1 0 0 1" condim="6" mass="0.1" contype="1" conaffinity="1"
+            friction="2 0.1 0.01"/>
+    </body>
+  </worldbody>
+</mujoco>
