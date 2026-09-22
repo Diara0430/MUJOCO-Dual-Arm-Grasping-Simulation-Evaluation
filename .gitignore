@@ -1,0 +1,4 @@
+__pycache__/
+*.py[cod]
+dual_arm_example/results/*/
+!dual_arm_example/results/20260130_115939/

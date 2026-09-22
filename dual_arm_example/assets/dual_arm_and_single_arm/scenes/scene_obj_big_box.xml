@@ -2,4 +2,12 @@
   <compiler angle="radian" meshdir="../meshes"/>
   <include file="../quad_dual.xml"/>
   <include file="../objects/obj_big_box.xml"/>
+  <!-- Five fixed RGB-D views around the ground grasp workspace (0, 0.6, 0.1). -->
+  <worldbody>
+    <camera name="grasp_top" pos="0 0.6 0.8" xyaxes="1 0 0 0 1 0" fovy="55"/>
+    <camera name="grasp_front" pos="0 0.15 0.45" xyaxes="1 0 0 0 0.7 0.7" fovy="55"/>
+    <camera name="grasp_back" pos="0 1.35 0.35" xyaxes="-1 0 0 0 -0.32 0.95" fovy="55"/>
+    <camera name="grasp_left" pos="-0.75 0.6 0.35" xyaxes="0 -1 0 0.32 0 0.95" fovy="55"/>
+    <camera name="grasp_right" pos="0.75 0.6 0.35" xyaxes="0 1 0 -0.32 0 0.95" fovy="55"/>
+  </worldbody>
 </mujoco>

@@ -6,6 +6,8 @@ from pathlib import Path
 from datetime import datetime
 import traceback
 import time
+import argparse
+from contextlib import nullcontext
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -151,6 +153,9 @@ class GraspCandidate:
     right_pos_obj: np.ndarray
     left_rot_obj: np.ndarray
     right_rot_obj: np.ndarray
+    left_width: float = 0.0
+    right_width: float = 0.0
+    pair_score: float = 0.0
 
 
 # =========================
@@ -1196,10 +1201,25 @@ def evaluate_candidate(candidate: GraspCandidate,
 # 主程序
 # =========================
 def main():
+    parser = argparse.ArgumentParser(description="Dual-arm five-stage grasp evaluation")
+    parser.add_argument("--candidate-source", choices=("aabb", "vision"), default="aabb")
+    parser.add_argument("--headless", action="store_true", help="Run without interactive viewer")
+    parser.add_argument("--max-candidates", type=int, default=NUM_CANDIDATES)
+    args = parser.parse_args()
+    if args.max_candidates < 1:
+        parser.error("--max-candidates must be positive")
+    if args.candidate_source == "vision":
+        from dataclasses import asdict
+        from visual_grasp_candidates import VisionConfig
+        vision_config = asdict(VisionConfig())
+    else:
+        vision_config = None
     logger = ResultLogger(out_dir="results")
     logger.save_json("run_config", {
         "scheme": "B (ground pick)",
-        "NUM_CANDIDATES": NUM_CANDIDATES,
+        "candidate_source": args.candidate_source,
+        "vision_config": vision_config,
+        "NUM_CANDIDATES": args.max_candidates,
         "PREGRASP_OFFSET": PREGRASP_OFFSET,
         "LIFT_HEIGHT": LIFT_HEIGHT,
         "HOLD_TIME": HOLD_TIME,
@@ -1266,6 +1286,7 @@ def main():
         # Candidate-level CSV
         cand_fields = [
             "scene", "object_body", "candidate_id", "pair_dist",
+            "left_width", "right_width", "pair_score",
 
             # world
             "left_x_w","left_y_w","left_z_w","right_x_w","right_y_w","right_z_w",
@@ -1292,11 +1313,11 @@ def main():
         viewer = None
 
         try:
-            with mujoco.viewer.launch_passive(
+            with (nullcontext(None) if args.headless else mujoco.viewer.launch_passive(
                 model, data,
                 show_left_ui=False, show_right_ui=False,
                 key_callback=key_callback
-            ) as v:
+            )) as v:
                 viewer = v
                 rate = RateLimiter(frequency=CONTROL_FREQ, warn=False)
 
@@ -1312,11 +1333,28 @@ def main():
                 obj_pos0 = data.xpos[obj_body_id].copy()
                 obj_rot0 = data.xmat[obj_body_id].copy().reshape(3,3)
 
-                candidates = build_grasp_candidates_adaptive(
-                    mins, maxs, center, extent,
-                    obj_pos_w=obj_pos0, obj_rot_w=obj_rot0,
-                    num_candidates=NUM_CANDIDATES
-                )
+                if args.candidate_source == "vision":
+                    from visual_grasp_candidates import visual_candidates
+                    left_site = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, LEFT_EE_SITE)
+                    right_site = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, RIGHT_EE_SITE)
+                    candidates, bundle = visual_candidates(
+                        model, data, obj_geom_ids, obj_pos0, obj_rot0,
+                        data.site_xpos[left_site].copy(), data.site_xpos[right_site].copy(),
+                        limit=args.max_candidates)
+                    if not candidates:
+                        raise ValueError("Vision yielded no grasp pairs; adjust cameras or VisionConfig thresholds")
+                    np.savez_compressed(logger.root / f"{scene_name}_vision.npz",
+                        points=bundle["points"], normals=bundle["normals"],
+                        direction_families=bundle["families"],
+                        **{f"{name}_{key}": value for name, view in bundle["views"].items()
+                           for key, value in view.items()})
+                    print(f"[INFO] segmented cloud: {len(bundle['points'])} points; "
+                          f"single grasps: {bundle['single_count']}")
+                else:
+                    candidates = build_grasp_candidates_adaptive(
+                        mins, maxs, center, extent,
+                        obj_pos_w=obj_pos0, obj_rot_w=obj_rot0,
+                        num_candidates=args.max_candidates)
                 print(f"[INFO] candidates: {len(candidates)}")
                 print("[INFO] Keys: q quit | space pause | . step | n skip | v toggle markers")
 
@@ -1370,6 +1408,9 @@ def main():
                         "object_body": obj_body_name,
                         "candidate_id": i,
                         "pair_dist": float(np.linalg.norm(cand.left_pos_w - cand.right_pos_w)),
+                        "left_width": cand.left_width,
+                        "right_width": cand.right_width,
+                        "pair_score": cand.pair_score,
 
                         "left_x_w": float(cand.left_pos_w[0]), "left_y_w": float(cand.left_pos_w[1]), "left_z_w": float(cand.left_pos_w[2]),
                         "right_x_w": float(cand.right_pos_w[0]), "right_y_w": float(cand.right_pos_w[1]), "right_z_w": float(cand.right_pos_w[2]),
